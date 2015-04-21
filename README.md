@@ -1,5 +1,5 @@
 # BachelorPaper
-# God help us to meet the deadlines. Amen.
+God help us to meet the deadlines. Amen.
 
 Here you can find three programs, computing
 mandelbrot set:
