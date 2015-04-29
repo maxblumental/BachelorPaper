@@ -1,7 +1,6 @@
 # BachelorPaper
-God help us to meet the deadlines. Amen.
 
-Here you can find three programs, computing
+Here you can find following programs, computing
 mandelbrot set:
  
  - mandelbrot-dyn.cu - Mariani-Silver
@@ -11,7 +10,10 @@ mandelbrot set:
  time algorithm in CUDA C;
 
  - mandelbrot-omp.cpp - naive escape
- time algorithm in OpenMP C++.
+ time algorithm in OpenMP C++;
+
+ - mandelbrot-naive-acc.cpp - naive escape
+ time algorithm in OpenACC C++.
 
 mandelbrot-dyn.cu was added just to
 illustrate an effective way of using
