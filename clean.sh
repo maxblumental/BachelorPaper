@@ -6,4 +6,4 @@ if [ -d "images/" ]; then
   rm -rf images
 fi
 
-rm *.png 2> /dev/null
+rm *.log *.png 2> /dev/null

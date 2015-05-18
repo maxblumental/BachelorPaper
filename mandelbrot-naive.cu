@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include <iostream>
+using namespace std;
 /** CUDA check macro */
 #define cucheck(call) \
 	{\
@@ -30,8 +31,6 @@
 	}
 
 /** data size */
-#define H (16 * 1024)
-#define W (16 * 1024)
 #define IMAGE_PATH "./images/mandelbrot-naive.png"
 #define SUBDIV 32
 
@@ -60,8 +59,8 @@ void save_image(const char *filename, int *dwells, int w, int h) {
 	png_init_io(png_ptr, fp);
 	// write header (8 bit colour depth)
 	png_set_IHDR(png_ptr, info_ptr, w, h,
-							 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
-							 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+                     8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+	             PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 	// set title
 	png_text title_text;
 	title_text.compression = PNG_TEXT_COMPRESSION_NONE;
@@ -155,7 +154,7 @@ __global__ void mandelbrot_k
 (int *dwells, int w, int h, complex cmin, complex cmax) {
 	// complex value to start iteration (c)
 	int y = threadIdx.x + blockIdx.x * blockDim.x;
-	compute_raw<<<divup(H, SUBDIV), SUBDIV>>>
+	compute_raw<<<divup(w, SUBDIV), SUBDIV>>>
 		(dwells, y, w, h, cmin, cmax);
         cucheck_dev(cudaGetLastError());
 }  // mandelbrot_k
@@ -183,8 +182,14 @@ void dwell_color(int *r, int *g, int *b, int dwell) {
 }  // dwell_color
 
 int main(int argc, char **argv) {
+        if (argc != 2)
+          {
+            fprintf(stderr, "Provide image size, please.\n");
+            return 0;
+          }
+
 	// allocate memory
-	int w = W, h = H;
+	int w = atoi(argv[1])*1024, h = atoi(argv[1])*1024;
 	size_t dwell_sz = w * h * sizeof(int);
 	int *h_dwells, *d_dwells;
 	cucheck(cudaMalloc((void**)&d_dwells, dwell_sz));
@@ -192,7 +197,7 @@ int main(int argc, char **argv) {
 
 	// compute the dwells, copy them back
 	double t1 = omp_get_wtime();
-	mandelbrot_k<<<divup(H, SUBDIV), SUBDIV>>>
+	mandelbrot_k<<<divup(h, SUBDIV), SUBDIV>>>
 		(d_dwells, w, h, complex(-1.5, -1), complex(0.5, 1));
 	cucheck(cudaThreadSynchronize());
 	double t2 = omp_get_wtime();
@@ -200,12 +205,10 @@ int main(int argc, char **argv) {
 	gpu_time = t2 - t1;
 	
 	// save the image to PNG 
-	save_image(IMAGE_PATH, h_dwells, w, h);
+	save_image("mandelbrot-set.png", h_dwells, w, h);
 
 	// print performance
-	printf("Mandelbrot set computed in %.3lf s, at %.3lf Mpix/s\n", gpu_time, 
-				 h * w * 1e-6 / gpu_time);
-
+            cout << gpu_time << ' ' << w*h/(1000000*gpu_time) << endl;
 	// free data
 	cudaFree(d_dwells);
 	free(h_dwells);
