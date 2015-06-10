@@ -26,7 +26,35 @@ def generate_plot_config(name, mode):
   config.write("set xlabel \"resolution (x*x Mpix)\"\n")
   config.write("set ylabel \"{} ({})\"\n".format(what, units))
   config.write("set title \"Mandelbrot set build {} for {}\"\n".format(what, name))
-  config.write("plot \"{}-{}.log\" with lines\n".format(name, what))
+  config.write("plot \"{}-{}.log\" with lines title \"{}\"\n".format(name, what, name))
+  config.close()
+  return name+'.gp'
+
+def generate_plot_config_comparison(names, mode):
+  fullname = 'comparison-of'
+  what=''
+  units=''
+  if mode == 0:
+    fullname = fullname + '-time'
+    what='time'
+    units='sec'
+  elif mode == 1:
+    fullname = fullname + '-speed'
+    what='speed'
+    units='Mpix/sec'
+  config = open(name+".gp", 'w')
+  config.write("set term png\n")
+  config.write("set output \"{}.png\"\n".format(fullname))
+  config.write("set grid\n")
+  config.write("set xlabel \"resolution (x*x Mpix)\"\n")
+  config.write("set ylabel \"{} ({})\"\n".format(what, units))
+  config.write("set title \"Mandelbrot set build {} comparison\"\n".format(what))
+  plot_str = "plot "
+  colors = ["red", "blue", "green"]
+  for nm in names:
+    plot_str += "\""+nm+"-"+what+".log\""+" with lines title \""+nm+"\" linecolor rgb \""+ colors[names.index(nm)] +"\", "
+  plot_str = plot_str[:len(plot_str) - 2]
+  config.write(plot_str)
   config.close()
   return name+'.gp'
 
@@ -51,8 +79,9 @@ def get_log(name, mode):
 if __name__ == '__main__':
   #compilation section
   compile_strings = [
-    "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/mandelbrot-naive.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o cuda-c",
-    ]
+    "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-dynamic.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o dynamic",
+    "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-ignore.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o ignore",
+  ]
   compile_log = open("compile.log", "w")
 
   for c in compile_strings:
@@ -63,9 +92,10 @@ if __name__ == '__main__':
   compile_log.close()
 
   #run section
-  args = [2**i for i in range(5)]
+  args = [i for i in range(1,17)]
   exe = [
-    'cuda-c',
+    'dynamic',
+    'ignore',
   ]
 
   run_logs = [open(ex+".log", "w") for ex in exe]
@@ -80,21 +110,21 @@ if __name__ == '__main__':
       sp.call(arg_lst, stdout=rl)
     rl.close()
 
-  #data processing: build it with gnuplot
+  #data processing: prepare tables for gnuplot
   for name in exe:
-    #measure build time
     get_log(name, 0)
-    pconf = generate_plot_config(name, 0)
-    sp.call(['gnuplot', pconf])
-    sp.call(['rm', pconf])
-    sp.call(['rm', name+'-time.log'])
-
-    #measure build speed
     get_log(name, 1)
-    pconf = generate_plot_config(name, 1)
-    sp.call(['gnuplot', pconf])
-    sp.call(['rm', pconf])
-    sp.call(['rm', name+'-speed.log'])
-
+  
+  #plot comparison graphs
+  pconf = generate_plot_config_comparison(exe, 0)
+  sp.call(['gnuplot', pconf])
+  sp.call(['rm', pconf])
+ 
+  pconf = generate_plot_config_comparison(exe, 1)
+  sp.call(['gnuplot', pconf])
+  sp.call(['rm', pconf])
+  
   for ex in exe:
     sp.call(['rm', ex])
+    sp.call(['rm', ex+'-speed.log'])
+    sp.call(['rm', ex+'-time.log'])

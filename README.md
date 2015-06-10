@@ -1,22 +1,19 @@
 # BachelorPaper
 
-Here you can find following programs, computing
-mandelbrot set:
+In the source/ directory you can find following
+programs in CUDA C, computing mandelbrot set:
  
- - mandelbrot-dyn.cu - Mariani-Silver
- algorithm in CUDA C;
+ - mandelbrot-optimized.cu - Mariani-Silver
+ algorithm;
 
- - mandelbrot-naive.cu - naive escape
- time algorithm in CUDA C;
+ - mandelbrot-dynamic.cu - naive escape time
+ algorithm with dynamic parallelism;
 
- - mandelbrot-omp.cpp - naive escape
- time algorithm in OpenMP C++;
+ - mandelbrot-ignore.cpp - naive escape
+ time algorithm ignoring simd pragma;
 
- - mandelbrot-naive-acc.cpp - naive escape
- time algorithm in OpenACC C++.
-
-mandelbrot-dyn.cu was added just to
+mandelbrot-optimized.cu was added just to
 illustrate an effective way of using
 dynamic parallelism.
 Here we basically launch and measure
-performance of naive version.
+performance of naive versions.
