@@ -31,7 +31,7 @@ using namespace std;
 	}
 
 //Threads per block
-#define SUBDIV 32
+#define SUBDIV 128
 
 /** time spent in device */
 double gpu_time = 0;
@@ -143,11 +143,20 @@ __device__ int pixel_dwell
 
 __global__ void mandelbrot_k
 (int *dwells, int w, int h, complex cmin, complex cmax) {
-	// complex value to start iteration (c)
-	int y = threadIdx.x + blockIdx.x * blockDim.x;
+        __shared__ int y, x0;
+        int x;
 
-        for (int x = 0; x < w; x++)
-          dwells[y * w + x] = pixel_dwell(w, h, cmin, cmax, x, y); 
+        if (threadIdx.x == 0)
+        {
+          y = blockIdx.y;
+          x0 = blockIdx.x*blockDim.x;
+        }
+
+        __syncthreads();
+
+        x = x0 + threadIdx.x;
+        dwells[y * w + x] = pixel_dwell(w, h, cmin, cmax, x, y); 
+
 }  // mandelbrot_k
 
 /** gets the color, given the dwell (on host) */
@@ -188,7 +197,8 @@ int main(int argc, char **argv) {
 
 	// compute the dwells, copy them back
 	double t1 = omp_get_wtime();
-	mandelbrot_k<<<divup(h, SUBDIV), SUBDIV>>>
+        dim3 grid_size(divup(w, SUBDIV), h);
+	mandelbrot_k<<<grid_size, SUBDIV>>>
 		(d_dwells, w, h, complex(-1.5, -1), complex(0.5, 1));
 	cucheck(cudaThreadSynchronize());
 	double t2 = omp_get_wtime();
@@ -196,7 +206,7 @@ int main(int argc, char **argv) {
 	gpu_time = t2 - t1;
 	
 	// save the image to PNG 
-	save_image("mandelbrot-set-ignore.png", h_dwells, w, h);
+	save_image("mandelbrot-set-predictor.png", h_dwells, w, h);
 
 	// print performance
             cout << gpu_time << ' ' << w*h/(1048576*gpu_time) << endl;

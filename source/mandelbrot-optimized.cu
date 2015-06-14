@@ -4,10 +4,11 @@
 #include <png.h>
 #include <omp.h>
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+using namespace std;
 /** CUDA check macro */
 #define cucheck(call) \
 	{\
@@ -288,14 +289,15 @@ void dwell_color(int *r, int *g, int *b, int dwell) {
 	}
 }  // dwell_color
 
-/** data size */
-#define H (16 * 1024)
-#define W (16 * 1024)
-#define IMAGE_PATH "./images/mandelbrot-cuda.png"
-
 int main(int argc, char **argv) {
-	// allocate memory
-	int w = W, h = H;
+	
+        if (argc != 2)
+        {
+            fprintf(stderr, "Provide image size, please.\n");
+            return 0;
+        }
+
+	int w = atoi(argv[1])*1024, h = atoi(argv[1])*1024;
 	size_t dwell_sz = w * h * sizeof(int);
 	int *h_dwells, *d_dwells;
 	cucheck(cudaMalloc((void**)&d_dwells, dwell_sz));
@@ -305,19 +307,17 @@ int main(int argc, char **argv) {
 	double t1 = omp_get_wtime();
 	dim3 bs(BSX, BSY), grid(INIT_SUBDIV, INIT_SUBDIV);
 	mandelbrot_block_k<<<grid, bs>>>
-		(d_dwells, w, h, complex(-1.5, -1), complex(0.5, 1), 0, 0, W / INIT_SUBDIV, 1);
+		(d_dwells, w, h, complex(-1.5, -1), complex(0.5, 1), 0, 0, w / INIT_SUBDIV, 1);
 	cucheck(cudaThreadSynchronize());
 	double t2 = omp_get_wtime();
 	cucheck(cudaMemcpy(h_dwells, d_dwells, dwell_sz, cudaMemcpyDeviceToHost));
 	gpu_time = t2 - t1;
 	
 	// save the image to PNG file
-	save_image(IMAGE_PATH, h_dwells, w, h);
+	save_image("mandelbrot-set-optimized.png", h_dwells, w, h);
 
-	// print performance
-	printf("Mandelbrot set computed in %.3lf s, at %.3lf Mpix/s\n", gpu_time, 
-				 h * w * 1e-6 / gpu_time);
-
+        // print performance
+        cout << gpu_time << ' ' << w*h/(1048576*gpu_time) << endl;
 	// free data
 	cudaFree(d_dwells);
 	free(h_dwells);

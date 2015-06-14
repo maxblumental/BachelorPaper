@@ -143,17 +143,17 @@ __device__ int pixel_dwell
 
 __global__ void compute_raw
 (int *dwells, int y, int w, int h, complex cmin, complex cmax) {
-	// complex value to start iteration (c)
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int dwell = pixel_dwell(w, h, cmin, cmax, x, y);
-	dwells[y * w + x] = dwell;
+
+        dwells[y * w + x] = dwell;
 }  // mandelbrot_k
 
 __global__ void mandelbrot_k
 (int *dwells, int w, int h, complex cmin, complex cmax) {
-	// complex value to start iteration (c)
 	int y = threadIdx.x + blockIdx.x * blockDim.x;
-	compute_raw<<<divup(w, SUBDIV), SUBDIV>>>
+
+        compute_raw<<<divup(w, SUBDIV), SUBDIV>>>
 		(dwells, y, w, h, cmin, cmax);
         cucheck_dev(cudaGetLastError());
 }  // mandelbrot_k
@@ -182,10 +182,10 @@ void dwell_color(int *r, int *g, int *b, int dwell) {
 
 int main(int argc, char **argv) {
         if (argc != 2)
-          {
+        {
             fprintf(stderr, "Provide image size, please.\n");
             return 0;
-          }
+        }
 
 	// allocate memory
 	int w = atoi(argv[1])*1024, h = atoi(argv[1])*1024;
@@ -202,12 +202,12 @@ int main(int argc, char **argv) {
 	double t2 = omp_get_wtime();
 	cucheck(cudaMemcpy(h_dwells, d_dwells, dwell_sz, cudaMemcpyDeviceToHost));
 	gpu_time = t2 - t1;
-	
+
 	// save the image to PNG 
 	save_image("mandelbrot-set-dynamic.png", h_dwells, w, h);
 
 	// print performance
-            cout << gpu_time << ' ' << w*h/(1000000*gpu_time) << endl;
+        cout << gpu_time << ' ' << w*h/(1048576*gpu_time) << endl;
 	// free data
 	cudaFree(d_dwells);
 	free(h_dwells);

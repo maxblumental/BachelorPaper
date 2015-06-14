@@ -4,7 +4,8 @@ import shlex
 #################################################
 # To add a target, add its compilation line to
 # the compile_strings list and the name of the
-# executable to the exe list.
+# executable to the exe list. If there are more
+# than three executables, add colors.
 #################################################
 
 def generate_plot_config(name, mode):
@@ -50,7 +51,7 @@ def generate_plot_config_comparison(names, mode):
   config.write("set ylabel \"{} ({})\"\n".format(what, units))
   config.write("set title \"Mandelbrot set build {} comparison\"\n".format(what))
   plot_str = "plot "
-  colors = ["red", "blue", "green"]
+  colors = ["red", "green", "blue", "magenta"]
   for nm in names:
     plot_str += "\""+nm+"-"+what+".log\""+" with lines title \""+nm+"\" linecolor rgb \""+ colors[names.index(nm)] +"\", "
   plot_str = plot_str[:len(plot_str) - 2]
@@ -81,6 +82,8 @@ if __name__ == '__main__':
   compile_strings = [
     "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-dynamic.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o dynamic",
     "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-ignore.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o ignore",
+    "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-predictor.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o predictor",
+    "/usr/local/cuda-6.5/bin/nvcc /export/users/mblument/BachelorPaper/source/mandelbrot-optimized.cu -O3 -arch=sm_35 -rdc=true -lcudadevrt -Xcompiler -fopenmp -lpng -o optimized",
   ]
   compile_log = open("compile.log", "w")
 
@@ -96,6 +99,8 @@ if __name__ == '__main__':
   exe = [
     'dynamic',
     'ignore',
+    'predictor',
+    'optimized',
   ]
 
   run_logs = [open(ex+".log", "w") for ex in exe]
